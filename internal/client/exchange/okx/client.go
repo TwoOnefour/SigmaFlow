@@ -6,7 +6,6 @@ import (
 	"github.com/gorilla/websocket"
 	"net/http"
 	"okx/internal/model"
-	"okx/internal/util"
 	"resty.dev/v3"
 	"strconv"
 	"strings"
@@ -99,7 +98,7 @@ func (oc *Client) wsAuth(conn *websocket.Conn) error {
 				ApiKey:     oc.apiKey,
 				Passphrase: oc.passPhrase,
 				Timestamp:  ts,
-				Sign:       util.AccessSign(ts, http.MethodGet, uriPath, "", oc.secretKey),
+				Sign:       AccessSign(ts, http.MethodGet, uriPath, "", oc.secretKey),
 			},
 		},
 	}
@@ -161,14 +160,14 @@ func (oc *Client) handleWsMessage() {
 	}
 }
 
-func (oc *Client) DoRestyRequest(req *resty.Request, method, path string, body ...interface{}) error {
+func (oc *Client) doRestyRequest(req *resty.Request, method, path string, body ...interface{}) error {
 	signPath := path
 	ts := time.Now().UTC().Format("2006-01-02T15:04:05.000Z")
 	var bodyStr string
 	if len(body) > 0 && method == http.MethodPost {
 		_body, ok := body[0].(map[string]string)
 		if !ok {
-			return fmt.Errorf("[client.DoRestyRequest] Can not transform body to type (map[string]string)")
+			return fmt.Errorf("[client.doRestyRequest] Can not transform body to type (map[string]string)")
 		}
 		bodyBytes, err := json.Marshal(&_body)
 		if err != nil {
@@ -185,7 +184,7 @@ func (oc *Client) DoRestyRequest(req *resty.Request, method, path string, body .
 		req.SetHeader("x-simulated-trading", "1")
 	}
 	req.SetHeaders(map[string]string{
-		"OK-ACCESS-SIGN":      util.AccessSign(ts, method, signPath, bodyStr, oc.secretKey),
+		"OK-ACCESS-SIGN":      AccessSign(ts, method, signPath, bodyStr, oc.secretKey),
 		"OK-ACCESS-TIMESTAMP": ts,
 	})
 	resp, err := req.Execute(method, path)
@@ -196,10 +195,6 @@ func (oc *Client) DoRestyRequest(req *resty.Request, method, path string, body .
 		return err
 	}
 	return nil
-}
-
-func (oc *Client) GetRestClient() *resty.Client {
-	return oc.restClient
 }
 
 // Fetch last [period, now] data
@@ -213,7 +208,7 @@ func (oc *Client) GetCandle(period int) ([]model.Candlestick, error) {
 	urlPath := "/api/v5/market/candles"
 	cnt := 0
 	for period > 0 {
-		err := oc.DoRestyRequest(req, http.MethodGet, urlPath)
+		err := oc.doRestyRequest(req, http.MethodGet, urlPath)
 		if err != nil || resp == nil || resp.Code != "0" {
 			return nil, err
 		}
@@ -269,7 +264,7 @@ func (oc *Client) GetBalance(ccy ...string) ([]model.BalanceData, error) {
 		req.SetQueryParam("ccy", strings.Join(ccy, ","))
 	}
 	req.SetResult(m)
-	err := oc.DoRestyRequest(req, http.MethodGet, path)
+	err := oc.doRestyRequest(req, http.MethodGet, path)
 	if err != nil {
 		return nil, err
 	}
@@ -281,7 +276,7 @@ func (oc *Client) GetHolding(instId string) ([]model.HoldingData, error) {
 	path := "/api/v5/account/positions"
 	req := oc.restClient.R()
 	req.SetResult(&m).SetQueryParam("instId", instId)
-	err := oc.DoRestyRequest(req, http.MethodGet, path)
+	err := oc.doRestyRequest(req, http.MethodGet, path)
 	if err != nil {
 		return nil, err
 	}
@@ -298,5 +293,5 @@ func (oc *Client) Order(instId, side, sz string) error {
 		"ordType": "market",
 		"tdMode":  "cash",
 	}
-	return oc.DoRestyRequest(req, http.MethodPost, path, body)
+	return oc.doRestyRequest(req, http.MethodPost, path, body)
 }

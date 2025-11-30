@@ -6,7 +6,6 @@ import (
 	"okx/internal/model"
 	"okx/internal/service/llm"
 	"okx/internal/util"
-	"resty.dev/v3"
 	"strings"
 )
 
@@ -16,8 +15,6 @@ type Service struct {
 }
 
 type Market interface {
-	DoRestyRequest(req *resty.Request, method, path string, body ...interface{}) error
-	GetRestClient() *resty.Client
 	GetCandle(period int) ([]model.Candlestick, error)
 	GetHolding(instId string) ([]model.HoldingData, error)
 	GetBalance(ccy ...string) ([]model.BalanceData, error)
