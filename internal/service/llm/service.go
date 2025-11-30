@@ -43,12 +43,12 @@ Every "BUY" or "HOLD" signal MUST allow for a Risk Plan.
 Strictly output a JSON object:
 {
   "action": "BUY" | "SELL" | "HOLD",
-  "position_pct": <float 0.0 to 1.0>,
+  "position_pct": <float 0.0 to 1.0>, // eg: action = "BUY", position_pct = 0.5, Remaining USDT = 100, will buy 100 * 0.5 = 50 btc-usdt. action = "SELL", Asset (BTC) Equity = 1, position_pct = 0.5, and in this case will sell (1 * 0.5 = 0.5) BTC
   "stop_loss_price": <float>, // MANDATORY for BUY/HOLD. The price to exit if wrong.
   "take_profit_target": <float>, // The immediate technical resistance level.
   "reason": "<Concise analysis>"
 }
-
+(noted): if action is not "HOLD", you <must> offer position_pct rather than giving 0.0
 ### Note
 If Current Position is None, means that no currency position is holding
 `
@@ -67,7 +67,8 @@ Format: Date, Open, High, Low, Close, Status, Volume, MA5, MA50, MA200, bb upper
 `
 
 var accountTemplate = `
-Total Equity: %s
+Total Equity(USD): %s
+Remaining USDT: %.2f
 Current Position:
 %s
 `
@@ -77,7 +78,7 @@ var positionTemplate = `
 - Average Entry Price: %s
 - Unrealized PnL: %s
 - PnL Ratio: %s
-- Equity: %s
+- Equity(usd): %s
 `
 
 type Service struct {
@@ -109,12 +110,24 @@ func NewClient(ctx context.Context, advisor Advisor) (*Service, error) {
 
 func (gs *Service) Completion(holding []model.BalanceData, candle []model.CandleWithIndicator) (*model.Decision, error) {
 	var position string
-	if len(holding[0].Details) > 0 && holding[0].Details[0].OpenAvgPx != "" {
-		position = fmt.Sprintf(positionTemplate, holding[0].Details[0].Ccy, holding[0].Details[0].OpenAvgPx, holding[0].Details[0].SpotUpl, holding[0].Details[0].SpotUplRatio, holding[0].Details[0].EQusd)
-	} else {
-		position = "None"
+	var remainUSDT float64
+	var remainBTC float64
+	for _, c := range holding[0].Details {
+		if c.Ccy == "USDT" {
+			amount, _ := strconv.ParseFloat(c.EQusd, 64)
+			remainUSDT = amount
+		} else if c.Ccy == "BTC" {
+			if c.OpenAvgPx != "" {
+				position = fmt.Sprintf(positionTemplate, c.Ccy, c.OpenAvgPx, c.SpotUpl, c.SpotUplRatio, c.EQ)
+				amount, _ := strconv.ParseFloat(c.EQ, 64)
+				remainBTC = amount
+			} else {
+				position = "None"
+			}
+		}
+
 	}
-	accountStr := fmt.Sprintf(accountTemplate, holding[0].TotalEq, position)
+	accountStr := fmt.Sprintf(accountTemplate, holding[0].TotalEq, remainUSDT, position)
 	var candleStr strings.Builder
 	for i, c := range candle {
 		tsInt, _ := strconv.ParseInt(c.Ts, 10, 64)
@@ -145,22 +158,16 @@ func (gs *Service) Completion(holding []model.BalanceData, candle []model.Candle
 		res = strings.Trim(res, "json")
 	}
 	resp := []byte(res)
-	totalEq, err := strconv.ParseFloat(holding[0].TotalEq, 64)
 
-	if err != nil {
-		return nil, err
-	}
 	if err = json.Unmarshal(resp, &geminiResp); err != nil {
 		return nil, err
 	}
-	if geminiResp.Action == "BUY" {
-		geminiResp.Amount = strconv.FormatFloat(totalEq*geminiResp.PositionPct, 'f', -1, 64)
-	} else if geminiResp.Action == "SELL" {
-		amount, err := strconv.ParseFloat(geminiResp.Amount, 64)
-		if err != nil {
-			return nil, err
-		}
-		geminiResp.Amount = strconv.FormatFloat(geminiResp.PositionPct*amount, 'f', -1, 64)
+	switch geminiResp.Action {
+	case "BUY":
+		geminiResp.Amount = strconv.FormatFloat(remainUSDT*geminiResp.PositionPct, 'f', -1, 64)
+		break
+	case "SELL":
+		geminiResp.Amount = strconv.FormatFloat(remainBTC*geminiResp.PositionPct, 'f', -1, 64)
 	}
 
 	return geminiResp, nil

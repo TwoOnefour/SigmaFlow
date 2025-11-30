@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/joho/godotenv"
 	"log"
 	"okx/internal/client/exchange/okx"
@@ -48,8 +47,8 @@ func main() {
 	if err != nil {
 		return
 	}
-	fmt.Println(completion)
-	fmt.Println(balance)
+	log.Println(*completion)
+	log.Println(balance)
 	err = tradeService.Order(*completion)
 	if err != nil {
 		return
@@ -57,9 +56,7 @@ func main() {
 }
 
 func di(geminiApiKey, okxKey, okxSecret, okxPhrase, okxSimulate string) (*trade.Service, error) {
-
 	_okx, _ := okx.NewOkxClient(okxPhrase, okxSecret, okxKey, okxSimulate)
-
 	_gemini, err := gemini.NewClient(context.Background(), geminiApiKey)
 	if err != nil {
 		return nil, err
