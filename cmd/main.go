@@ -8,6 +8,7 @@ import (
 	"okx/internal/client/llm/gemini"
 	"okx/internal/service/llm"
 	"okx/internal/service/trade"
+	"okx/pkg/currency"
 	"os"
 )
 
@@ -33,17 +34,17 @@ func main() {
 	if err != nil {
 		return
 	}
-
-	candle, err := tradeService.GetCandle()
+	pair := currency.NewPair(currency.USDT, currency.BTC)
+	candle, err := tradeService.GetCandle(pair)
 	if err != nil {
 		return
 	}
 
-	balance, err := tradeService.GetBalance("BTC", "USDT")
+	balance, err := tradeService.GetBalance(pair.Base, pair.Quote)
 	if err != nil {
 		return
 	}
-	completion, err := tradeService.AnalyzeMarket(context.Background(), balance, candle)
+	completion, err := tradeService.AnalyzeMarket(currency.NewPair(currency.USDT, currency.BTC), balance, candle)
 	if err != nil {
 		return
 	}
@@ -55,6 +56,7 @@ func main() {
 	}
 }
 
+// Dependency Injection
 func di(geminiApiKey, okxKey, okxSecret, okxPhrase, okxSimulate string) (*trade.Service, error) {
 	_okx, _ := okx.NewOkxClient(okxPhrase, okxSecret, okxKey, okxSimulate)
 	_gemini, err := gemini.NewClient(context.Background(), geminiApiKey)

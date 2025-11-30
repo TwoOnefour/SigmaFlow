@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"okx/internal/model"
+	"okx/pkg/currency"
 	"strconv"
 	"strings"
 	"time"
@@ -67,7 +68,7 @@ Format: Date, Open, High, Low, Close, Status, Volume, MA5, MA50, MA200, bb upper
 `
 
 var accountTemplate = `
-Total Equity(USD): %s
+Total Equity(USD): %.2f
 Remaining USDT: %.2f
 Current Position:
 %s
@@ -75,14 +76,13 @@ Current Position:
 
 var positionTemplate = `
 - Asset: %s
-- Average Entry Price: %s
-- Unrealized PnL: %s
-- PnL Ratio: %s
-- Equity(usd): %s
+- Average Entry Price: %.2f
+- Unrealized PnL: %.2f
+- PnL Ratio: %.2f
+- Equity(usd): %.2f
 `
 
 type Service struct {
-	apiKey  string
 	advisor Advisor
 	ctx     context.Context
 }
@@ -108,26 +108,21 @@ func NewClient(ctx context.Context, advisor Advisor) (*Service, error) {
 	return _geminiClient, nil
 }
 
-func (gs *Service) Completion(holding []model.BalanceData, candle []model.CandleWithIndicator) (*model.Decision, error) {
+func (gs *Service) Completion(pair currency.Pair, holding *model.TradeData, candle []model.CandleWithIndicator) (*model.Decision, error) {
+	remainQuote := holding.AccountAssets[pair.Quote].Equity
+	remainBase := holding.AccountAssets[pair.Base].EquityUSD
 	var position string
-	var remainUSDT float64
-	var remainBTC float64
-	for _, c := range holding[0].Details {
-		if c.Ccy == "USDT" {
-			amount, _ := strconv.ParseFloat(c.EQusd, 64)
-			remainUSDT = amount
-		} else if c.Ccy == "BTC" {
-			if c.OpenAvgPx != "" {
-				position = fmt.Sprintf(positionTemplate, c.Ccy, c.OpenAvgPx, c.SpotUpl, c.SpotUplRatio, c.EQ)
-				amount, _ := strconv.ParseFloat(c.EQ, 64)
-				remainBTC = amount
-			} else {
-				position = "None"
-			}
-		}
-
+	if remainQuote < 0.01 {
+		position = "None"
+	} else {
+		position = fmt.Sprintf(positionTemplate,
+			pair.Quote.String(),
+			holding.AccountAssets[pair.Quote].AVGPrice,
+			holding.AccountAssets[pair.Quote].UnrealizedPNL,
+			holding.AccountAssets[pair.Quote].UnrealizedPNLRatio,
+			remainQuote)
 	}
-	accountStr := fmt.Sprintf(accountTemplate, holding[0].TotalEq, remainUSDT, position)
+	accountStr := fmt.Sprintf(accountTemplate, holding.TotalEquity, remainBase, position)
 	var candleStr strings.Builder
 	for i, c := range candle {
 		tsInt, _ := strconv.ParseInt(c.Ts, 10, 64)
@@ -136,7 +131,6 @@ func (gs *Service) Completion(holding []model.BalanceData, candle []model.Candle
 		if i == 0 {
 			status = "Unconfirmed"
 		}
-
 		line := fmt.Sprintf("%s, %.2f, %.2f, %.2f, %.2f, %s, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f, %.2f\n",
 			dateStr, c.O, c.H, c.L, c.C, status, c.Vol, c.MA5, c.MA50, c.MA200, c.BBUpper, c.BBMid, c.BBLower)
 		candleStr.WriteString(line)
@@ -164,10 +158,10 @@ func (gs *Service) Completion(holding []model.BalanceData, candle []model.Candle
 	}
 	switch geminiResp.Action {
 	case "BUY":
-		geminiResp.Amount = strconv.FormatFloat(remainUSDT*geminiResp.PositionPct, 'f', -1, 64)
+		geminiResp.Amount = strconv.FormatFloat(remainBase*geminiResp.PositionPct, 'f', -1, 64)
 		break
 	case "SELL":
-		geminiResp.Amount = strconv.FormatFloat(remainBTC*geminiResp.PositionPct, 'f', -1, 64)
+		geminiResp.Amount = strconv.FormatFloat(remainQuote*geminiResp.PositionPct, 'f', -1, 64)
 	}
 
 	return geminiResp, nil

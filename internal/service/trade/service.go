@@ -1,11 +1,11 @@
 package trade
 
 import (
-	"context"
 	"math"
 	"okx/internal/model"
 	"okx/internal/service/llm"
 	"okx/internal/util"
+	"okx/pkg/currency"
 	"strings"
 )
 
@@ -15,9 +15,8 @@ type Service struct {
 }
 
 type Market interface {
-	GetCandle(period int) ([]model.Candlestick, error)
-	GetHolding(instId string) ([]model.HoldingData, error)
-	GetBalance(ccy ...string) ([]model.BalanceData, error)
+	GetCandle(pair currency.Pair, period int) ([]model.Candlestick, error)
+	GetBalance(coin ...currency.Coin) (*model.TradeData, error)
 	Order(instId, side, sz string) error
 }
 
@@ -35,10 +34,10 @@ func NewTradeService(c Market, llmService *llm.Service) *Service {
 	}
 }
 
-func (o *Service) GetCandle() ([]model.CandleWithIndicator, error) {
+func (o *Service) GetCandle(pair currency.Pair) ([]model.CandleWithIndicator, error) {
 	const needCount = 231
 	const outputCount = 30
-	c, err := o.market.GetCandle(needCount)
+	c, err := o.market.GetCandle(pair, needCount)
 	if err != nil {
 		return nil, err
 	}
@@ -85,11 +84,11 @@ func (o *Service) GetCandle() ([]model.CandleWithIndicator, error) {
 	return candles, nil
 }
 
-func (o *Service) GetBalance(instId ...string) ([]model.BalanceData, error) {
-	if len(instId) == 0 {
+func (o *Service) GetBalance(coin ...currency.Coin) (*model.TradeData, error) {
+	if len(coin) == 0 {
 		return o.market.GetBalance()
 	}
-	return o.market.GetBalance(instId...)
+	return o.market.GetBalance(coin...)
 }
 
 func (o *Service) Order(decision model.Decision) error {
@@ -100,6 +99,7 @@ func (o *Service) Order(decision model.Decision) error {
 	return o.market.Order("BTC-USDT", strings.ToLower(decision.Action), decision.Amount)
 }
 
-func (o *Service) AnalyzeMarket(ctx context.Context, holding []model.BalanceData, candle []model.CandleWithIndicator) (*model.Decision, error) {
-	return o.llm.Completion(holding, candle)
+func (o *Service) AnalyzeMarket(pair currency.Pair, holding *model.TradeData, candle []model.CandleWithIndicator) (*model.Decision, error) {
+	// currency.NewPair(currency.USDT, currency.BTC)
+	return o.llm.Completion(pair, holding, candle)
 }

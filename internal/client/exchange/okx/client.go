@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/websocket"
 	"net/http"
 	"okx/internal/model"
+	"okx/pkg/currency"
 	"resty.dev/v3"
 	"strconv"
 	"strings"
@@ -198,11 +199,11 @@ func (oc *Client) doRestyRequest(req *resty.Request, method, path string, body .
 }
 
 // Fetch last [period, now] data
-func (oc *Client) GetCandle(period int) ([]model.Candlestick, error) {
+func (oc *Client) GetCandle(pair currency.Pair, period int) ([]model.Candlestick, error) {
 	m := make([]model.Candlestick, period)
 	resp := &candlesResp{}
 	req := oc.restClient.R().SetResult(resp).SetQueryParams(map[string]string{
-		"instId": "BTC-USDT",
+		"instId": pair.Quote.String() + "-" + pair.Base.String(),
 		"bar":    "1Dutc",
 	})
 	urlPath := "/api/v5/market/candles"
@@ -256,31 +257,40 @@ func (oc *Client) GetCandle(period int) ([]model.Candlestick, error) {
 	return m, nil
 }
 
-func (oc *Client) GetBalance(ccy ...string) ([]model.BalanceData, error) {
-	m := &model.BalanceResponse{}
+func (oc *Client) GetBalance(coin ...currency.Coin) (*model.TradeData, error) {
+	m := &BalanceResponse{}
 	path := "/api/v5/account/balance"
 	req := oc.restClient.R()
-	if len(ccy) > 0 {
-		req.SetQueryParam("ccy", strings.Join(ccy, ","))
+	if len(coin) > 0 {
+		c := make([]string, len(coin))
+		for i, v := range coin {
+			c[i] = v.String()
+		}
+		req.SetQueryParam("ccy", strings.Join(c, ","))
 	}
 	req.SetResult(m)
 	err := oc.doRestyRequest(req, http.MethodGet, path)
 	if err != nil {
 		return nil, err
 	}
-	return m.Data, nil
-}
 
-func (oc *Client) GetHolding(instId string) ([]model.HoldingData, error) {
-	m := &model.HoldingResponse{}
-	path := "/api/v5/account/positions"
-	req := oc.restClient.R()
-	req.SetResult(&m).SetQueryParam("instId", instId)
-	err := oc.doRestyRequest(req, http.MethodGet, path)
-	if err != nil {
-		return nil, err
+	var res model.TradeData
+	accountAssets := make(map[currency.Coin]*model.Asset)
+	res.TotalEquity = m.Data[0].TotalEq.Float64()
+	for _, c := range m.Data[0].Details {
+		_coin := currency.Coin(c.Ccy)
+		accountAssets[_coin] = &model.Asset{
+			Equity:             c.EQ.Float64(),
+			Currency:           _coin,
+			TotalProfit:        c.TotalPNL.Float64(),
+			UnrealizedPNL:      c.SpotUpl.Float64(),
+			UnrealizedPNLRatio: c.SpotUplRatio.Float64(),
+			AVGPrice:           c.OpenAvgPx.Float64(),
+			EquityUSD:          c.EQusd.Float64(),
+		}
 	}
-	return m.Data, nil
+	res.AccountAssets = accountAssets
+	return &res, nil
 }
 
 func (oc *Client) Order(instId, side, sz string) error {
