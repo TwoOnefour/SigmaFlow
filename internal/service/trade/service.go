@@ -2,11 +2,11 @@ package trade
 
 import (
 	"context"
+	"github.com/twoonefour/sigmaflow/internal/model"
+	"github.com/twoonefour/sigmaflow/internal/service/llm"
+	"github.com/twoonefour/sigmaflow/pkg/currency"
+	"github.com/twoonefour/sigmaflow/pkg/indicator"
 	"math"
-	"sigmaflow/internal/model"
-	"sigmaflow/internal/service/llm"
-	"sigmaflow/pkg/currency"
-	"sigmaflow/pkg/indicator"
 	"strings"
 )
 

@@ -2,8 +2,8 @@ package gemini
 
 import (
 	"context"
+	"github.com/twoonefour/sigmaflow/pkg/llm"
 	"google.golang.org/genai"
-	"sigmaflow/pkg/llm"
 )
 
 type Client struct {

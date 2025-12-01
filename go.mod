@@ -1,4 +1,4 @@
-module sigmaflow
+module github.com/twoonefour/sigmaflow
 
 go 1.24.5
 

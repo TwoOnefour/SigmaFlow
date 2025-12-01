@@ -1,6 +1,6 @@
 package model
 
-import "sigmaflow/pkg/currency"
+import "github.com/twoonefour/sigmaflow/pkg/currency"
 
 type Decision struct {
 	Action          string  `json:"action"`

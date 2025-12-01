@@ -1,6 +1,6 @@
 package okx
 
-import "sigmaflow/pkg"
+import "github.com/twoonefour/sigmaflow/pkg"
 
 type HoldingData struct {
 	AvgPx       string `json:"avgPx"`       // 开仓均价
