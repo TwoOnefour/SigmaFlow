@@ -1,6 +1,7 @@
 package trade
 
 import (
+	"context"
 	"math"
 	"okx/internal/model"
 	"okx/internal/service/llm"
@@ -99,7 +100,7 @@ func (o *Service) Order(decision model.Decision) error {
 	return o.market.Order("BTC-USDT", strings.ToLower(decision.Action), decision.Amount)
 }
 
-func (o *Service) AnalyzeMarket(pair currency.Pair, holding *model.TradeData, candle []model.CandleWithIndicator) (*model.Decision, error) {
+func (o *Service) AnalyzeMarket(ctx context.Context, pair currency.Pair, holding *model.TradeData, candle []model.CandleWithIndicator) (*model.Decision, error) {
 	// currency.NewPair(currency.USDT, currency.BTC)
 	return o.llm.Completion(pair, holding, candle)
 }

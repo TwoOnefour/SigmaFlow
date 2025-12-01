@@ -32,7 +32,6 @@ func (c *Client) Chat(ctx context.Context, messages []llm.Messages) (string, err
 			ThinkingBudget: &thinkingBudgetVal,
 		},
 	}
-
 	res, err := c.client.Models.GenerateContent(ctx, "gemini-2.5-pro", genai.Text(msg), config)
 	if err != nil {
 		return "", err

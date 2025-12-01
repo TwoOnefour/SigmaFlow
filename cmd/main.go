@@ -55,7 +55,7 @@ func di(geminiApiKey, okxKey, okxSecret, okxPhrase, okxSimulate string) (*trade.
 	if err != nil {
 		return nil, err
 	}
-	_llm, err := llm.NewClient(context.Background(), _gemini)
+	_llm, err := llm.NewClient(_gemini)
 	if err != nil {
 		return nil, err
 	}

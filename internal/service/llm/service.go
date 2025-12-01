@@ -84,7 +84,6 @@ var positionTemplate = `
 
 type Service struct {
 	advisor Advisor
-	ctx     context.Context
 }
 
 const RoleAssistant = "assistant"
@@ -100,15 +99,14 @@ type Advisor interface {
 	Chat(ctx context.Context, messages []Messages) (string, error)
 }
 
-func NewClient(ctx context.Context, advisor Advisor) (*Service, error) {
+func NewClient(advisor Advisor) (*Service, error) {
 	_geminiClient := &Service{
 		advisor: advisor,
-		ctx:     ctx,
 	}
 	return _geminiClient, nil
 }
 
-func (gs *Service) Completion(pair currency.Pair, holding *model.TradeData, candle []model.CandleWithIndicator) (*model.Decision, error) {
+func (gs *Service) Completion(ctx context.Context, pair currency.Pair, holding *model.TradeData, candle []model.CandleWithIndicator) (*model.Decision, error) {
 	remainQuote := holding.AccountAssets[pair.Quote].Equity
 	remainBase := holding.AccountAssets[pair.Base].EquityUSD
 	var position string
@@ -141,7 +139,7 @@ func (gs *Service) Completion(pair currency.Pair, holding *model.TradeData, cand
 		{Content: fmt.Sprintf(userContentTemplate, accountStr, candleStr.String()), Role: RoleUser},
 	}
 
-	res, err := gs.advisor.Chat(gs.ctx, msg)
+	res, err := gs.advisor.Chat(ctx, msg)
 	if err != nil {
 		return nil, err
 	}
