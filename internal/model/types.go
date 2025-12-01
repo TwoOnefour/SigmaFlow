@@ -55,3 +55,6 @@ type Asset struct {
 	AVGPrice           float64       // 平均买入价格
 	EquityUSD          float64       // usd表示的价值
 }
+
+type GraphicData struct {
+}

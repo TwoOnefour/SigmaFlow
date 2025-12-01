@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"github.com/joho/godotenv"
 	"log"
 	"okx/internal/client/exchange/okx"
 	"okx/internal/client/llm/gemini"
+	"okx/internal/service/cron"
 	"okx/internal/service/llm"
 	"okx/internal/service/trade"
 	"okx/pkg/currency"
@@ -35,25 +37,15 @@ func main() {
 		return
 	}
 	pair := currency.NewPair(currency.USDT, currency.BTC)
-	candle, err := tradeService.GetCandle(pair)
-	if err != nil {
-		return
-	}
-
-	balance, err := tradeService.GetBalance(pair.Base, pair.Quote)
-	if err != nil {
-		return
-	}
-	completion, err := tradeService.AnalyzeMarket(currency.NewPair(currency.USDT, currency.BTC), balance, candle)
-	if err != nil {
-		return
-	}
-	log.Println(*completion)
-	log.Println(balance)
-	err = tradeService.Order(*completion)
-	if err != nil {
-		return
-	}
+	c := cron.NewService()
+	c.AddCron("1 1 8 * * *", func() {
+		err := run(tradeService, pair)
+		if err != nil {
+			log.Println(err.Error())
+		}
+	})
+	run(tradeService, pair)
+	select {}
 }
 
 // Dependency Injection
@@ -69,4 +61,32 @@ func di(geminiApiKey, okxKey, okxSecret, okxPhrase, okxSimulate string) (*trade.
 	}
 	tradeService := trade.NewTradeService(_okx, _llm)
 	return tradeService, nil
+}
+
+func run(tradeService *trade.Service, pair currency.Pair) error {
+	candle, err := tradeService.GetCandle(pair)
+	if err != nil {
+		return err
+	}
+
+	balance, err := tradeService.GetBalance(pair.Base, pair.Quote)
+	if err != nil {
+		return err
+	}
+	completion, err := tradeService.AnalyzeMarket(currency.NewPair(currency.USDT, currency.BTC), balance, candle)
+	if err != nil {
+		return err
+	}
+	log.Println(fmt.Sprintf("AI决策:%s, 数量：%.2f %%, 理由：%s", completion.Action, completion.PositionPct*100, completion.Reason))
+	err = tradeService.Order(*completion)
+	if err != nil {
+		return err
+	}
+	AfterOrder, err := tradeService.GetBalance(pair.Base, pair.Quote)
+	if err != nil {
+		return err
+	}
+	log.Println(fmt.Sprintf("目前剩余(单位USD) %s:%.2f, %s:%.2f",
+		pair.Base.String(), AfterOrder.AccountAssets[pair.Base].EquityUSD, pair.Quote.String(), AfterOrder.AccountAssets[pair.Quote].EquityUSD))
+	return nil
 }
