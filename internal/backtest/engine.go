@@ -69,7 +69,8 @@ func (e *Engine) Run(candles []model.Candlestick, pair currency.Pair) (*Result, 
 	}
 
 	capital := e.initialCapital
-	position := 0.0 // 持仓数量
+	position := 0.0       // 持仓数量
+	avgEntryPrice := 0.0  // 平均入场价格
 	maxEquity := capital
 	maxDrawdown := 0.0
 	winningTrades := 0
@@ -105,10 +106,18 @@ func (e *Engine) Run(candles []model.Candlestick, pair currency.Pair) (*Result, 
 		case "BUY":
 			if capital > 0 {
 				buyAmount := capital * decision.PositionPct
-				buyAmount = buyAmount * (1 - e.commission) // 扣除手续费
-				units := buyAmount / currentPrice
+				buyAmountAfterFee := buyAmount * (1 - e.commission) // 扣除手续费
+				units := buyAmountAfterFee / currentPrice
+				
+				// 更新平均入场价格
+				if position > 0 {
+					avgEntryPrice = (avgEntryPrice*position + currentPrice*units) / (position + units)
+				} else {
+					avgEntryPrice = currentPrice
+				}
+				
 				position += units
-				capital -= buyAmount / (1 - e.commission)
+				capital -= buyAmount
 
 				result.Trades = append(result.Trades, Trade{
 					Timestamp:   time.Now(), // 实际应使用蜡烛图时间
@@ -123,7 +132,8 @@ func (e *Engine) Run(candles []model.Candlestick, pair currency.Pair) (*Result, 
 			if position > 0 {
 				sellUnits := position * decision.PositionPct
 				sellValue := sellUnits * currentPrice * (1 - e.commission)
-				pnl := sellValue - (sellUnits * currentPrice) // 简化的PnL计算
+				// 计算实际盈亏：卖出价值 - 买入成本
+				pnl := sellValue - (sellUnits * avgEntryPrice)
 				capital += sellValue
 				position -= sellUnits
 

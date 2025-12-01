@@ -89,11 +89,6 @@ func CalculateEMA(data []float64, period int) []float64 {
 	return ema
 }
 
-// RSIResult RSI计算结果
-type RSIResult struct {
-	RSI float64
-}
-
 // CalculateRSI 计算相对强弱指数
 // period: 通常为14
 func CalculateRSI(closes []float64, period int) []float64 {

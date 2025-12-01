@@ -1,8 +1,11 @@
 package notify
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"okx/internal/model"
 	"time"
 )
@@ -123,7 +126,7 @@ func (c *ConsoleNotifier) SendErrorAlert(ctx context.Context, err error) error {
 	return c.Send(ctx, message)
 }
 
-// TelegramNotifier Telegram通知器（接口定义，实际实现需要HTTP客户端）
+// TelegramNotifier Telegram通知器
 type TelegramNotifier struct {
 	botToken string
 	chatID   string
@@ -138,12 +141,41 @@ func NewTelegramNotifier(botToken, chatID string) *TelegramNotifier {
 }
 
 func (t *TelegramNotifier) Send(ctx context.Context, message string) error {
-	// TODO: 实现Telegram API调用
-	// 使用 https://api.telegram.org/bot<token>/sendMessage
 	if t.botToken == "" || t.chatID == "" {
+		// 未配置Telegram，静默跳过
 		return nil
 	}
-	// 此处添加HTTP请求发送消息
+
+	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", t.botToken)
+	
+	payload := map[string]string{
+		"chat_id":    t.chatID,
+		"text":       message,
+		"parse_mode": "Markdown",
+	}
+	
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("failed to marshal telegram payload: %w", err)
+	}
+	
+	req, err := http.NewRequestWithContext(ctx, "POST", url, bytes.NewBuffer(payloadBytes))
+	if err != nil {
+		return fmt.Errorf("failed to create telegram request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("failed to send telegram message: %w", err)
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("telegram API returned status %d", resp.StatusCode)
+	}
+	
 	return nil
 }
 
