@@ -12,6 +12,7 @@ import (
 	"okx/internal/service/trade"
 	"okx/pkg/currency"
 	"os"
+	"time"
 )
 
 func main() {
@@ -37,14 +38,19 @@ func main() {
 		return
 	}
 	pair := currency.NewPair(currency.USDT, currency.BTC)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
 	c := cron.NewService()
-	c.AddCron("1 1 8 * * *", func() {
-		err := run(tradeService, pair)
+	err = c.AddCron("1 8 * * *", func() {
+		err := run(ctx, tradeService, pair)
 		if err != nil {
 			log.Println(err.Error())
 		}
 	})
-	run(tradeService, pair)
+	if err != nil {
+		return
+	}
+	run(ctx, tradeService, pair)
 	select {}
 }
 
@@ -63,17 +69,17 @@ func di(geminiApiKey, okxKey, okxSecret, okxPhrase, okxSimulate string) (*trade.
 	return tradeService, nil
 }
 
-func run(tradeService *trade.Service, pair currency.Pair) error {
+func run(ctx context.Context, tradeService *trade.Service, pair currency.Pair) error {
 	candle, err := tradeService.GetCandle(pair)
 	if err != nil {
 		return err
 	}
 
-	balance, err := tradeService.GetBalance(pair.Base, pair.Quote)
+	balance, err := tradeService.GetBalance(ctx, pair.Base, pair.Quote)
 	if err != nil {
 		return err
 	}
-	completion, err := tradeService.AnalyzeMarket(currency.NewPair(currency.USDT, currency.BTC), balance, candle)
+	completion, err := tradeService.AnalyzeMarket(ctx, currency.NewPair(currency.USDT, currency.BTC), balance, candle)
 	if err != nil {
 		return err
 	}
@@ -82,7 +88,7 @@ func run(tradeService *trade.Service, pair currency.Pair) error {
 	if err != nil {
 		return err
 	}
-	AfterOrder, err := tradeService.GetBalance(pair.Base, pair.Quote)
+	AfterOrder, err := tradeService.GetBalance(ctx, pair.Base, pair.Quote)
 	if err != nil {
 		return err
 	}

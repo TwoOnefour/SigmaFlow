@@ -17,7 +17,7 @@ type Service struct {
 
 type Market interface {
 	GetCandle(pair currency.Pair, period int) ([]model.Candlestick, error)
-	GetBalance(coin ...currency.Coin) (*model.TradeData, error)
+	GetBalance(ctx context.Context, coin ...currency.Coin) (*model.TradeData, error)
 	Order(instId, side, sz string) error
 }
 
@@ -85,11 +85,11 @@ func (o *Service) GetCandle(pair currency.Pair) ([]model.CandleWithIndicator, er
 	return candles, nil
 }
 
-func (o *Service) GetBalance(coin ...currency.Coin) (*model.TradeData, error) {
+func (o *Service) GetBalance(ctx context.Context, coin ...currency.Coin) (*model.TradeData, error) {
 	if len(coin) == 0 {
-		return o.market.GetBalance()
+		return o.market.GetBalance(ctx)
 	}
-	return o.market.GetBalance(coin...)
+	return o.market.GetBalance(ctx, coin...)
 }
 
 func (o *Service) Order(decision model.Decision) error {
@@ -102,5 +102,5 @@ func (o *Service) Order(decision model.Decision) error {
 
 func (o *Service) AnalyzeMarket(ctx context.Context, pair currency.Pair, holding *model.TradeData, candle []model.CandleWithIndicator) (*model.Decision, error) {
 	// currency.NewPair(currency.USDT, currency.BTC)
-	return o.llm.Completion(pair, holding, candle)
+	return o.llm.Completion(ctx, pair, holding, candle)
 }

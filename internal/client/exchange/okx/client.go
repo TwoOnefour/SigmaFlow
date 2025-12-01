@@ -1,6 +1,7 @@
 package okx
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
@@ -70,6 +71,7 @@ func NewOkxClient(passPhrase, secretKey, apiKey, simulate string) (*Client, erro
 	//	return nil, err
 	//}
 	_okxClient.restClient = resty.New().SetTimeout(5 * time.Second)
+	_okxClient.restClient.SetProxy("http://127.0.0.1:10808")
 	_okxClient.restClient.SetHeaders(map[string]string{
 		"OK-ACCESS-PASSPHRASE": passPhrase,
 		"OK-ACCESS-KEY":        apiKey,
@@ -257,10 +259,10 @@ func (oc *Client) GetCandle(pair currency.Pair, period int) ([]model.Candlestick
 	return m, nil
 }
 
-func (oc *Client) GetBalance(coin ...currency.Coin) (*model.TradeData, error) {
+func (oc *Client) GetBalance(ctx context.Context, coin ...currency.Coin) (*model.TradeData, error) {
 	m := &BalanceResponse{}
 	path := "/api/v5/account/balance"
-	req := oc.restClient.R()
+	req := oc.restClient.R().WithContext(ctx)
 	if len(coin) > 0 {
 		c := make([]string, len(coin))
 		for i, v := range coin {

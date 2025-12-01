@@ -3,7 +3,7 @@ package gemini
 import (
 	"context"
 	"google.golang.org/genai"
-	"okx/internal/service/llm"
+	"okx/pkg/llm"
 )
 
 type Client struct {

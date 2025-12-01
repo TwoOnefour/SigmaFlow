@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"okx/internal/model"
 	"okx/pkg/currency"
+	"okx/pkg/llm"
 	"strconv"
 	"strings"
 	"time"
@@ -90,13 +91,8 @@ const RoleAssistant = "assistant"
 const RoleSystem = "system"
 const RoleUser = "user"
 
-type Messages struct {
-	Role    string
-	Content string
-}
-
 type Advisor interface {
-	Chat(ctx context.Context, messages []Messages) (string, error)
+	Chat(ctx context.Context, messages []llm.Messages) (string, error)
 }
 
 func NewClient(advisor Advisor) (*Service, error) {
@@ -134,7 +130,7 @@ func (gs *Service) Completion(ctx context.Context, pair currency.Pair, holding *
 		candleStr.WriteString(line)
 	}
 
-	msg := []Messages{
+	msg := []llm.Messages{
 		{Content: systemPrompt, Role: RoleSystem},
 		{Content: fmt.Sprintf(userContentTemplate, accountStr, candleStr.String()), Role: RoleUser},
 	}
