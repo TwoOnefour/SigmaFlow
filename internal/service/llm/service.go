@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"okx/internal/model"
-	"okx/pkg/currency"
-	"okx/pkg/llm"
+	"sigmaflow/internal/model"
+	"sigmaflow/pkg/currency"
+	"sigmaflow/pkg/llm"
 	"strconv"
 	"strings"
 	"time"
@@ -87,10 +87,6 @@ type Service struct {
 	advisor Advisor
 }
 
-const RoleAssistant = "assistant"
-const RoleSystem = "system"
-const RoleUser = "user"
-
 type Advisor interface {
 	Chat(ctx context.Context, messages []llm.Messages) (string, error)
 }
@@ -131,8 +127,8 @@ func (gs *Service) Completion(ctx context.Context, pair currency.Pair, holding *
 	}
 
 	msg := []llm.Messages{
-		{Content: systemPrompt, Role: RoleSystem},
-		{Content: fmt.Sprintf(userContentTemplate, accountStr, candleStr.String()), Role: RoleUser},
+		{Content: systemPrompt, Role: llm.RoleSystem},
+		{Content: fmt.Sprintf(userContentTemplate, accountStr, candleStr.String()), Role: llm.RoleUser},
 	}
 
 	res, err := gs.advisor.Chat(ctx, msg)

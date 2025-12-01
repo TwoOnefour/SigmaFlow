@@ -1,6 +1,6 @@
 package model
 
-import "okx/pkg/currency"
+import "sigmaflow/pkg/currency"
 
 type Decision struct {
 	Action          string  `json:"action"`
@@ -28,12 +28,6 @@ type Candlestick struct {
 	C       float64 `json:"c"`       // Close (收盘价)
 	Vol     float64 `json:"vol"`     // 当天交易数量
 	Confirm string  `json:"confirm"` // 是否确认
-}
-
-type BollingerResult struct {
-	Upper  float64
-	Middle float64
-	Lower  float64
 }
 
 type CandleWithIndicator struct {

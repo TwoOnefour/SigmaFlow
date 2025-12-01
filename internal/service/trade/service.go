@@ -3,10 +3,10 @@ package trade
 import (
 	"context"
 	"math"
-	"okx/internal/model"
-	"okx/internal/service/llm"
-	"okx/internal/util"
-	"okx/pkg/currency"
+	"sigmaflow/internal/model"
+	"sigmaflow/internal/service/llm"
+	"sigmaflow/pkg/currency"
+	"sigmaflow/pkg/indicator"
 	"strings"
 )
 
@@ -47,10 +47,10 @@ func (o *Service) GetCandle(pair currency.Pair) ([]model.CandleWithIndicator, er
 	for i, v := range c {
 		m[len(c)-1-i] = v.C
 	}
-	bbResults := util.CalculateBollingerBands(m, 20, 2.0)
-	ma5 := util.CalculateMA(m, 5)
-	ma50 := util.CalculateMA(m, 50)
-	ma200 := util.CalculateMA(m, 200)
+	bbResults := indicator.CalculateBollingerBands(m, 20, 2.0)
+	ma5 := indicator.CalculateMA(m, 5)
+	ma50 := indicator.CalculateMA(m, 50)
+	ma200 := indicator.CalculateMA(m, 200)
 
 	candles := make([]model.CandleWithIndicator, outputCount)
 

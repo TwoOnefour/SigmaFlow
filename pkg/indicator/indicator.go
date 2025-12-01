@@ -1,17 +1,21 @@
-package util
+package indicator
 
 import (
 	"math"
-	"okx/internal/model"
 )
 
-func CalculateBollingerBands(closes []float64, period int, k float64) []model.BollingerResult {
-	length := len(closes)
-	results := make([]model.BollingerResult, length)
+type Bollinger struct {
+	Upper  float64
+	Middle float64
+	Lower  float64
+}
 
+func CalculateBollingerBands(closes []float64, period int, k float64) []Bollinger {
+	length := len(closes)
+	results := make([]Bollinger, length)
 	for i := 0; i < length; i++ {
 		if i < period-1 {
-			results[i] = model.BollingerResult{}
+			results[i] = Bollinger{}
 			continue
 		}
 
@@ -34,7 +38,7 @@ func CalculateBollingerBands(closes []float64, period int, k float64) []model.Bo
 		upper := ma + (k * stdDev)
 		lower := ma - (k * stdDev)
 
-		results[i] = model.BollingerResult{
+		results[i] = Bollinger{
 			Middle: ma,
 			Upper:  upper,
 			Lower:  lower,

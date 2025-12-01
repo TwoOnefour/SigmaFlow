@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"github.com/joho/godotenv"
 	"log"
-	"okx/internal/client/exchange/okx"
-	"okx/internal/client/llm/gemini"
-	"okx/internal/service/cron"
-	"okx/internal/service/llm"
-	"okx/internal/service/trade"
-	"okx/pkg/currency"
 	"os"
+	"sigmaflow/internal/client/exchange/okx"
+	"sigmaflow/internal/service/cron"
+	"sigmaflow/internal/service/llm"
+	"sigmaflow/internal/service/trade"
+	"sigmaflow/pkg/currency"
+	"sigmaflow/pkg/llm/gemini"
 	"time"
 )
 
@@ -57,7 +57,7 @@ func main() {
 // Dependency Injection
 func di(geminiApiKey, okxKey, okxSecret, okxPhrase, okxSimulate string) (*trade.Service, error) {
 	_okx, _ := okx.NewOkxClient(okxPhrase, okxSecret, okxKey, okxSimulate)
-	_gemini, err := gemini.NewClient(context.Background(), geminiApiKey)
+	_gemini, err := gemini.NewClient(geminiApiKey, "gemini-2.5-pro", 32768)
 	if err != nil {
 		return nil, err
 	}
