@@ -38,7 +38,7 @@ func main() {
 		return
 	}
 	pair := currency.NewPair(currency.USDT, currency.BTC)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
 	c := cron.NewService()
 	if err = c.AddCron("1 8 * * *", func() {
