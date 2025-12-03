@@ -19,13 +19,6 @@ type loginReq struct {
 	Args []args `json:"args"`
 }
 
-type loginResp struct {
-	Event  string `json:"event"`
-	Code   string `json:"code"`
-	Msg    string `json:"msg"`
-	ConnId string `json:"connId"`
-}
-
 type args struct {
 	ApiKey     string `json:"apiKey"`
 	Passphrase string `json:"passphrase"`
@@ -53,10 +46,6 @@ type Client struct {
 	simulate   bool
 }
 
-func (oc *Client) Sell(pct float64) error {
-	panic("implement me")
-}
-
 func NewOkxClient(passPhrase, secretKey, apiKey, simulate string) (*Client, error) {
 	_okxClient := &Client{
 		apiKey:     apiKey,
@@ -71,7 +60,7 @@ func NewOkxClient(passPhrase, secretKey, apiKey, simulate string) (*Client, erro
 	//	return nil, err
 	//}
 	_okxClient.restClient = resty.New().SetTimeout(5 * time.Second)
-	_okxClient.restClient.SetProxy("http://127.0.0.1:10808")
+	// _okxClient.restClient.SetProxy("http://127.0.0.1:10808")
 	_okxClient.restClient.SetHeaders(map[string]string{
 		"OK-ACCESS-PASSPHRASE": passPhrase,
 		"OK-ACCESS-KEY":        apiKey,
