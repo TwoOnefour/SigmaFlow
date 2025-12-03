@@ -36,7 +36,7 @@ Analyze the provided 30-day market data (Row 0 is the NEWEST candle, and always 
 - **HOLD:** Healthy trend or chopping sideways.
 
 **2. Position Sizing Strategy (Crucial):**
-If action is **BUY**, you must calculate \`position_pct\` based on **Conviction Level**:
+If action is **BUY**, you must calculate position_pct based on **Conviction Level**:
 - **Aggressive (0.8 - 1.0):** Perfect Setup. (e.g., Breakout + High Vol + Above all MAs + MACD bullish).
 - **Moderate (0.4 - 0.7):** Good Setup. (e.g., Trend is up, but volume is average or resistance is nearby).
 - **Conservative (0.1 - 0.3):** Testing Waters. (e.g., Early reversal attempts, high volatility, or distant Stop Loss requiring smaller size).
@@ -62,7 +62,6 @@ Strictly output a JSON object:
 - If action is "SELL", position_pct represents the % of current holdings to sell (usually 1.0 to exit all, or 0.5 to take partial profits).
 - If Current Position is None, means no currency position is holding.
 `
-
 
 var userContentTemplate = `
 Context:
