@@ -50,7 +50,7 @@ func main() {
 	if err != nil {
 		return
 	}
-	run(ctx, tradeService, pair)
+	// run(ctx, tradeService, pair)
 	select {}
 }
 
