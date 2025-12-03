@@ -143,7 +143,7 @@ func (gs *Service) Completion(ctx context.Context, pair currency.Pair, holding *
 	if err != nil {
 		return nil, err
 	}
-	var geminiResp *model.Decision
+	var decision *model.Decision
 
 	if strings.Contains(res, "`") {
 		res = strings.Trim(res, "`")
@@ -151,16 +151,16 @@ func (gs *Service) Completion(ctx context.Context, pair currency.Pair, holding *
 	}
 	resp := []byte(res)
 
-	if err = json.Unmarshal(resp, &geminiResp); err != nil {
+	if err = json.Unmarshal(resp, &decision); err != nil {
 		return nil, err
 	}
-	switch geminiResp.Action {
+	switch decision.Action {
 	case "BUY":
-		geminiResp.Amount = strconv.FormatFloat(remainBase*geminiResp.PositionPct, 'f', -1, 64)
+		decision.Amount = strconv.FormatFloat(remainBase*decision.PositionPct, 'f', -1, 64)
 		break
 	case "SELL":
-		geminiResp.Amount = strconv.FormatFloat(remainQuote*geminiResp.PositionPct, 'f', -1, 64)
+		decision.Amount = strconv.FormatFloat(remainQuote*decision.PositionPct, 'f', -1, 64)
 	}
 
-	return geminiResp, nil
+	return decision, nil
 }

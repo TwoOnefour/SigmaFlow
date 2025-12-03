@@ -180,11 +180,11 @@ func (oc *Client) doRestyRequest(req *resty.Request, method, path string, body .
 		"OK-ACCESS-TIMESTAMP": ts,
 	})
 	resp, err := req.Execute(method, path)
-	if err != nil || resp.StatusCode() != 200 {
-		if resp != nil {
-			return fmt.Errorf("httpcode: %d, response", resp.StatusCode())
-		}
-		return err
+	if err != nil {
+		return fmt.Errorf("request failed: %w", err)
+	}
+	if resp.StatusCode() != 200 {
+		return fmt.Errorf("unexpected status code: %d, response: %s", resp.StatusCode(), string(resp.Bytes()))
 	}
 	return nil
 }
