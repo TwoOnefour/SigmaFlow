@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"github.com/joho/godotenv"
 	"github.com/twoonefour/sigmaflow/internal/client/exchange/okx"
@@ -33,6 +34,8 @@ func main() {
 	okxKey = os.Getenv(okxPrefix + "API_KEY")
 	okxSecret = os.Getenv(okxPrefix + "API_SECRET")
 	okxPhrase = os.Getenv(okxPrefix + "API_PASSPHRASE")
+	debugPtr := flag.Bool("debug", false, "开启调试模式")
+	flag.Parse()
 	tradeService, err := di(geminiApiKey, okxKey, okxSecret, okxPhrase, okxSimulate)
 	if err != nil {
 		return
@@ -40,6 +43,12 @@ func main() {
 	pair := currency.NewPair(currency.USDT, currency.BTC)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
+	if *debugPtr {
+		if err = run(ctx, tradeService, pair); err != nil {
+			log.Println(err.Error())
+		}
+		return
+	}
 	c := cron.NewService()
 	if err = c.AddCron("1 8 * * *", func() {
 		err := run(ctx, tradeService, pair)
@@ -49,9 +58,6 @@ func main() {
 	}); err != nil {
 		log.Println(err.Error())
 		return
-	}
-	if err = run(ctx, tradeService, pair); err != nil {
-		log.Println(err.Error())
 	}
 	select {}
 }
