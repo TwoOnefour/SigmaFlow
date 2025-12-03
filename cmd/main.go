@@ -41,16 +41,18 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 	c := cron.NewService()
-	err = c.AddCron("1 8 * * *", func() {
+	if err = c.AddCron("1 8 * * *", func() {
 		err := run(ctx, tradeService, pair)
 		if err != nil {
 			log.Println(err.Error())
 		}
-	})
-	if err != nil {
+	}); err != nil {
+		log.Println(err.Error())
 		return
 	}
-	run(ctx, tradeService, pair)
+	if err = run(ctx, tradeService, pair); err != nil {
+		log.Println(err.Error())
+	}
 	select {}
 }
 
